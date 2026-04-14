@@ -3,24 +3,42 @@ from django_celery_beat.models import PeriodicTask, IntervalSchedule
 
 
 class Command(BaseCommand):
-    help = 'Создание периодической задачи через celery-beat'
+    help = 'Создание всех периодических задач для проекта'
 
     def handle(self, *args, **options):
-        # Создаем интервал (каждые 60 секунд)
-        schedule, _ = IntervalSchedule.objects.get_or_create(
+        # Создаем интервал для блокировки пользователей (каждые 24 часа)
+        deactivate_schedule, _ = IntervalSchedule.objects.get_or_create(
+            every=24,
+            period=IntervalSchedule.HOURS,
+        )
+
+        # Создаем интервал для отладки (каждые 60 секунд) - опционально
+        debug_schedule, _ = IntervalSchedule.objects.get_or_create(
             every=60,
             period=IntervalSchedule.SECONDS,
         )
 
-        # Создаем периодическую задачу
-        PeriodicTask.objects.get_or_create(
-            name='Debug task every 60 seconds',
+        # Блокировка неактивных пользователей
+        PeriodicTask.objects.update_or_create(
+            name='Deactivate inactive users',
             defaults={
-                'task': 'lms.tasks.debug_periodic_task',
-                'interval': schedule,
+                'task': 'users.tasks.deactivate_inactive_users',
+                'interval': deactivate_schedule,
+                'crontab': None,
                 'enabled': True,
             }
         )
 
-        self.stdout.write(self.style.SUCCESS('Периодическая задача создана'))
+        # Отладочная задача
+        PeriodicTask.objects.update_or_create(
+            name='Debug periodic task',
+            defaults={
+                'task': 'lms.tasks.debug_periodic_task',
+                'interval': debug_schedule,
+                'crontab': None,
+                'enabled': True,
+            }
+        )
+
+        self.stdout.write(self.style.SUCCESS('Все периодические задачи созданы/обновлены'))
 
