@@ -32,6 +32,8 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "lms",
     "users",
+    'django_celery_beat',
+    'django_celery_results',
 ]
 
 MIDDLEWARE = [
@@ -63,24 +65,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-
-# Database
-# https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-
-# REST_FRAMEWORK = {
-#     "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
-#     "DEFAULT_AUTHENTICATION_CLASSES": [
-#         "rest_framework_simplejwt.authentication.JWTAuthentication",
-#     ],
-#     "DEFAULT_PERMISSION_CLASSES": [
-#         "rest_framework.permissions.IsAuthenticated",
-#         "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-#     ],
-#     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
-#     "PAGE_SIZE": 10,
-#
-#     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-# }
 
 REST_FRAMEWORK = {
     "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
@@ -163,3 +147,14 @@ AUTH_USER_MODEL = "users.User"
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
 STRIPE_PUBLIC_KEY = os.getenv("STRIPE_PUBLIC_KEY")
 
+# Настройки Celery
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', f"redis://{os.getenv('REDIS_HOST', 'localhost')}:"
+                                                   f"{os.getenv('REDIS_PORT', '6379')}/{os.getenv('REDIS_DB', '0')}")
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
+
+# Настройки для периодических задач
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
