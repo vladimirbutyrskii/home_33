@@ -159,6 +159,19 @@ CELERY_TIMEZONE = 'UTC'
 # Настройки для периодических задач
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
+CELERY_BEAT_SCHEDULE = {
+    'deactivate-inactive-users-daily': {
+        'task': 'users.tasks.deactivate_inactive_users',
+        'schedule': timedelta(days=1),  # каждые 24 часа
+        'options': {'expires': 3600},
+    },
+    'debug-task-every-60-seconds': {
+        'task': 'lms.tasks.debug_periodic_task',
+        'schedule': timedelta(seconds=60),  # каждые 60 секунд
+    },
+}
+
+
 EMAIL_HOST = os.getenv("EMAIL_HOST")
 EMAIL_PORT = os.getenv("EMAIL_PORT")
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
