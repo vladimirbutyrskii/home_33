@@ -28,6 +28,17 @@ class Course(models.Model):
         verbose_name="Владелец",
         related_name="courses",
     )
+    last_updated = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Дата последнего обновления",
+        help_text="Автоматически обновляется при изменении курса или его уроков",
+    )
+    last_notification_sent = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Дата последнего уведомления",
+        help_text="Время последней отправки уведомления подписчикам",
+    )
 
     class Meta:
         verbose_name = "Курс"

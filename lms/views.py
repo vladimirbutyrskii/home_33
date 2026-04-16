@@ -70,6 +70,38 @@ class CourseViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
 
+    def perform_update(self, serializer):
+        """При обновлении курса отправляем уведомления подписчикам"""
+        course = self.get_object()
+        old_data = f"{course.name}_{course.description}"
+
+        # Сохраняем обновление
+        serializer.save()
+
+        # Проверяем, изменилось ли содержимое курса
+        new_course = serializer.instance
+        new_data = f"{new_course.name}_{new_course.description}"
+
+        if old_data != new_data:
+            # Вариант 1: простая отправка (каждый раз)
+            # send_course_update_notification.delay(course.id)
+
+            # Вариант 2: отправка с проверкой (не чаще 4 часов)
+            # Проверяем, прошло ли более 4 часов с последнего уведомления
+            if course.last_notification_sent:
+                from datetime import timedelta
+                time_since_last = timezone.now() - course.last_notification_sent
+                if time_since_last >= timedelta(hours=4):
+                    send_course_update_notification.delay(course.id)
+                    # Обновляем время уведомления
+                    course.last_notification_sent = timezone.now()
+                    course.save(update_fields=['last_notification_sent'])
+            else:
+                # Уведомление еще не отправлялось
+                send_course_update_notification.delay(course.id)
+                course.last_notification_sent = timezone.now()
+                course.save(update_fields=['last_notification_sent'])
+
 
 @extend_schema(
     summary="Создать урок",
